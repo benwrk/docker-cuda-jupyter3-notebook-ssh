@@ -1,0 +1,98 @@
+### CUDA, Tensorflow, Keras, Jupyter, 
+FROM  tensorflow/tensorflow:latest-gpu-jupyter
+
+## Pytorch 
+
+## Keras
+ENV CONDA_DIR /opt/conda
+ENV PATH $CONDA_DIR/bin:$PATH
+
+# Install conda
+ENV CONDA_DIR /opt/conda
+ENV PATH $CONDA_DIR/bin:$PATH
+RUN apt-get install -y wget
+
+WORKDIR /
+RUN wget --quiet --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-4.2.12-Linux-x86_64.sh && \
+    echo "c59b3dd3cad550ac7596e0d599b91e75d88826db132e4146030ef471bb434e9a *Miniconda3-4.2.12-Linux-x86_64.sh" | sha256sum -c - && \
+    /bin/bash /Miniconda3-4.2.12-Linux-x86_64.sh -f -b -p $CONDA_DIR && \
+    rm Miniconda3-4.2.12-Linux-x86_64.sh && \
+    echo export PATH=$CONDA_DIR/bin:'$PATH' > /etc/profile.d/conda.sh
+
+ENV NB_USER keras
+ENV NB_UID 1000
+
+RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
+    chown $NB_USER $CONDA_DIR -R && \
+    mkdir -p /src && \
+    chown $NB_USER /src
+
+USER $NB_USER
+
+ARG python_version=3.6
+
+RUN conda config --append channels conda-forge
+RUN conda install -y python=${python_version} && \
+    pip install --upgrade pip && \
+    pip install \
+      sklearn_pandas \
+      tensorflow-gpu \
+      cntk-gpu && \
+    conda install \
+      bcolz \
+      h5py \
+      matplotlib \
+      mkl \
+      nose \
+      notebook \
+      Pillow \
+      pandas \
+      pydot \
+      pygpu \
+      pyyaml \
+      scikit-learn \
+      six \
+      theano \
+      mkdocs \
+      && \
+    git clone git://github.com/keras-team/keras.git /src && pip install -e /src[tests] && \
+    pip install git+git://github.com/keras-team/keras.git && \
+    conda clean -yt
+        
+### Pytorch
+
+
+
+
+
+### Mysql
+# RUN apt-get update \
+#     && DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server=${MYSQL_VERSION}* \
+#     && rm -rf ${MYSQL_DATA_DIR} \
+#     && rm -rf /var/lib/apt/lists/*
+
+# COPY entrypoint.sh /sbin/entrypoint.sh
+
+# RUN chmod 755 /sbin/entrypoint.sh
+
+# EXPOSE 3306/tcp
+
+# ENTRYPOINT ["/sbin/entrypoint.sh"]
+
+### PHPmyadmin
+
+
+### SSH
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install openssh-server 
+# RUN apt-get update -y -q
+# RUN apt-get upgrade -y -q
+# RUN apt-get install -y -q openssh-server
+RUN echo '' >> /etc/ssh/sshd_config
+RUN echo '# Allow root login' >> /etc/ssh/sshd_config
+RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+RUN echo '' >> /etc/ssh/sshd_config
+
+ENV ROOT_PASSWORD=1q2w3e4r
+ENV NOTEBOOK_TOKEN=1q2w3e4r
+CMD bash -c 'echo -e "$ROOT_PASSWORD\n$ROOT_PASSWORD"' | passwd && service ssh start && /root/anaconda3/bin/jupyter notebook --notebook-dir=/opt/notebooks --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token="'$NOTEBOOK_TOKEN'"
+EXPOSE 22 8888
