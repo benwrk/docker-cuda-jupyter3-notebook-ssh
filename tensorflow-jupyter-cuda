@@ -1,0 +1,7 @@
+# CONDA
+FROM continuumio/miniconda3 AS build-conda
+
+# TF, CUDA-GPU, Jupyter
+FROM tensorflow/tensorflow:latest-gpu-jupyter
+ENV PATH=/opt/conda/bin:$PATH
+COPY --from=build-conda /opt/conda /opt/conda
